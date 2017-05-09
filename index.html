@@ -30,8 +30,10 @@ War, Automated
         suit: "LOSERS",
         code: "L"
     }
+    var each = 3;
     var going = false;
-    var deckOfCards, timer;
+    var deckOfCards;
+    var timer;
     var players = [];
 
     // Names to numbers :)
@@ -39,7 +41,7 @@ War, Automated
         if (isNaN(card.value)) {
             return numbers[card.value]
         }
-        return card.value
+        return parseInt(card.value);
     }
 
     // Player "objects"
@@ -53,7 +55,9 @@ War, Automated
             }
         }
         var win = function(cards) {
+            console.log(cards);
             deck = cards.concat(deck);
+            console.log(deck);
         }
         var count = function () {
             return deck.length;
@@ -61,18 +65,22 @@ War, Automated
         return {
             next: next,
             win: win,
-            count: count
+            count: count,
+            deck: deck
         }
     }
 
     // Set up players, start playing
     function go() {
         going = true;
-	if (! players.length) {
+        if (! players.length) {
             for (var i = 0; i < 4; i++) {
-                players.push(newPlayer(deckOfCards.slice(i*13, i*13+12)));
+                var begin = i*each;
+                var end = i*each+each;
+                console.log(begin, end);
+                players.push(newPlayer(deckOfCards.slice(begin, end)));
             }
-	}
+        }
         run();
     }
 
@@ -112,12 +120,12 @@ War, Automated
     // War! Compare cards, declare a winner
     function war(players) {
         var cards = getCards(players)
-        console.log(cards);
         var max = {idx: -1, val: -1};
         var battle = [];
         // Compare cards, looking for a maximum
         for (var i = 0; i < cards.length; i++) {
             var k = numeric(cards[i]);
+            console.log(i, k);
             if (k > max.val) {
                 max = {idx: i, val: k};
                 battle = []; // Reset list every time we increase max
@@ -143,16 +151,20 @@ War, Automated
     $("#stop").on("click", stop);
     $("#restart").on("click", restart);
 
-    $.ajax({
-        url: "http://localhost:8080/api/deck/new/draw/?count=52",
-        dataType: "json",
-        success: function(data, status, jqxhr) {
-            deckOfCards = data.cards;
-        },
-        error: function(jqxhr, status, error) {
-            console.log(jqxhr);
-        }
-    });
+    deckOfCards = [{value: '10'}, {value: '9'}, {value: 'QUEEN'}, 
+                    {value: '10'},{value: 'JACK'}, {value: '9'}, 
+                    {value: '8'}, {value: '7'},{value: '10'},
+                    {value: '5'}, {value: 'JACK'}, {value: 'QUEEN'}]
+//    $.ajax({
+//        url: "http://localhost:8080/api/deck/new/draw/?count=52",
+//        dataType: "json",
+//        success: function(data, status, jqxhr) {
+//            deckOfCards = data.cards;
+//        },
+//        error: function(jqxhr, status, error) {
+//            console.log(jqxhr);
+//        }
+//    });
 })();
 </script>
 </body>
