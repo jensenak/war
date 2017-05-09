@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+<title>
+War, Automated
+</title>
+</head>
+<body>
+<h1>Game of War</h1>
+<h3>Played automatically</h3>
+<div id="play">
+</div>
+<div id="controls">
+<button id="go">Go</button>
+<button id="stop">Stop</button>
+<button id="restart">Restart</button>
+</div>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script>
+    var numbers = {
+        "LOSE": -10,
+        "JACK": 11,
+        "QUEEN": 12,
+        "KING": 13,
+        "ACE": 14
+    }
+    var nullcard = {
+        image: "lose.png",
+        value: "LOSE",
+        suit: "LOSERS",
+        code: "L"
+    }
+    var going = false;
+    var deckOfCards, timer;
+    var players = [];
+
+    // Names to numbers :)
+    function numeric(card) {
+        if (isNaN(card.value)) {
+            return numbers[card.value]
+        }
+        return card.value
+    }
+
+    // Player "objects"
+    function newPlayer(d) {
+        var deck = d;
+        var next = function() {
+            if (deck.length) {
+                return deck.pop();
+            } else {
+                return nullcard;
+            }
+        }
+        var win = function(cards) {
+            deck = cards.concat(deck);
+        }
+        var count = function () {
+            return deck.length;
+        }
+        return {
+            next: next,
+            win: win,
+            count: count
+        }
+    }
+
+    // Set up players, start playing
+    function go() {
+        going = true;
+	if (! players.length) {
+            for (var i = 0; i < 4; i++) {
+                players.push(newPlayer(deckOfCards.slice(i*13, i*13+12)));
+            }
+	}
+        run();
+    }
+
+    // Pause playing
+    function stop() {
+        going = false;
+        clearInterval(timer);
+    }
+
+    function restart() {
+	players = [];
+	go();
+    }
+    
+    // Actual gameplay loop
+    function run() {
+        // Check that we're okay to run
+        if (! going) {
+            return
+        }
+        console.log("-------------------------------");
+        result = war(players);
+        console.log(result);
+        players[result.winner].win(result.cards);
+
+        timer = setTimeout(run, 1000);
+    }
+   
+    function getCards(p) { 
+        var cards = [];
+        for (var i = 0; i < p.length; i++) {
+            cards.push(p[i].next());
+        }
+        return cards
+    }
+
+    // War! Compare cards, declare a winner
+    function war(players) {
+        var cards = getCards(players)
+        console.log(cards);
+        var max = {idx: -1, val: -1};
+        var battle = [];
+        // Compare cards, looking for a maximum
+        for (var i = 0; i < cards.length; i++) {
+            var k = numeric(cards[i]);
+            if (k > max.val) {
+                max = {idx: i, val: k};
+                battle = []; // Reset list every time we increase max
+            } else if (k === max.val) {
+                battle.push(i);
+            }
+        }
+        // If there's more than one max, play war again, drawing additional cards
+        if (battle.length) {
+            var p = [max.idx].concat(battle);
+            for (var i = 0; i < p.length; i++) {
+                p[i] = players[i];
+            } 
+            result = war(p);
+            console.log('going deeper');
+            return {winner: result.winner, cards: result.cards.concat(cards)}
+        }
+        return {winner: max.idx, cards: cards}
+    }
+
+(function() {
+    $("#go").on("click", go);
+    $("#stop").on("click", stop);
+    $("#restart").on("click", restart);
+
+    $.ajax({
+        url: "http://localhost:8080/api/deck/new/draw/?count=52",
+        dataType: "json",
+        success: function(data, status, jqxhr) {
+            deckOfCards = data.cards;
+        },
+        error: function(jqxhr, status, error) {
+            console.log(jqxhr);
+        }
+    });
+})();
+</script>
+</body>
+</html>
